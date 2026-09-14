@@ -1,0 +1,32 @@
+detection:
+  name: "MOT17"
+  url: "https://motchallenge.net/data/MOT17/"
+  local_path: "data/raw/MOT17"
+  description: >
+    Sequences video annotees pour la detection et le tracking de pietons.
+    Utilise pour entrainer/evaluer le detecteur et le tracker.
+
+reid:
+  name: "Market-1501"
+  url: "https://zheng-lab.cecs.anu.edu.au/Project/project_reid.html"
+  local_path: "data/raw/Market-1501"
++  license: "Recherche uniquement -- pas de redistribution ni usage commercial (cf. citation.txt du dataset)"
++  citation: >
++    Liang Zheng, Shengjin Wang, Liyue Shen, Lu Tian, Jiahao Bu, and Qi Tian.
++    Person Re-identification Meets Image Search. Technical Report, 2015.
++  description: >
++    1501 identites (751 train / 750 test), 6 cameras, campus de Tsinghua University.
++  structure:
++    bounding_box_train: "12936 images, 751 identites -- utilise pour entrainer l'encoder"
++    bounding_box_test: "19732 images -- galerie de recherche pour l'evaluation"
++    query: "3368 images -- requetes de recherche (une image par identite/camera a retrouver dans bounding_box_test)"
++    gt_bbox: "25259 images annotees a la main -- sert a distinguer good/junk/distractors"
++    gt_query: "pour chaque requete, indices des images 'good' et 'junk' correspondantes -- utilise lors de l'evaluation (mAP, CMC)"
+
+
+processed:
+  detection_yolo_format: "data/processed/mot17_yolo"
+  reid_train_pairs: "data/processed/market1501_train_pairs"
+
+notes: >
+  Voir scripts/download_data.sh pour le telechargement automatique.

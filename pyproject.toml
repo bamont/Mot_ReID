@@ -1,0 +1,44 @@
+[tool.poetry]
+name = "mot-reid-pipeline"
+version = "0.1.0"
+description = "Pipeline end-to-end de detection, multi-objets tracking et re-identification"
+authors = ["Baptiste Montagnes"]
+readme = "README.md"
+packages = [{ include = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = "^2.0"
+pandas = "^2.2.0"
+matplotlib = "^3.8.0"
+opencv-python-headless = "^4.9.0"
+torch = "^2.6"
+torchvision = "^0.21.0"
+ultralytics = "^8.2.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.1.0"
+pytest-cov = "^5.0.0"
+ruff = "^0.3.0"
+black = "^24.3.0"
+pre-commit = "^3.7.0"
+jupyter = "^1.0.0"
+ipykernel = "^6.29.0"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "I", "W", "B", "UP"]
+ignore = ["E501"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --cov=src --cov-report=term-missing"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
