@@ -49,7 +49,7 @@ make test     # tests unitaires
 | Dataset | Usage | Lien |
 |---|---|---|
 | MOT17 | Détection & tracking | [motchallenge.net](https://motchallenge.net/data/MOT17/) |
-| Market-1501 | Ré-identification (à partir de la semaine 5) | [lien projet](https://zheng-lab.cecs.anu.edu.au/Project/project_reid.html) |
+| Market-1501 | Ré-identification | [lien projet](https://zheng-lab.cecs.anu.edu.au/Project/project_reid.html) |
 
 Voir `configs/datasets.yaml` et `scripts/download_data.sh`.
 
