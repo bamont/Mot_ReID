@@ -3,8 +3,8 @@
 > Pipeline de **détection**, **suivi multi-objets** et **ré-identification**,
 > construit de façon incrémentale, module par module.
 
-[![CI](https://github.com/bamont/mot-reid-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/bamont/mot-reid-pipeline/actions)
-![Python](https://img.shields.io/badge/python-3.10-blue)
+[![CI](https://github.com/bamont/Mot_ReID/actions/workflows/ci.yml/badge.svg)](https://github.com/bamont/Mot_ReID/actions)
+![Python](https://img.shields.io/badge/python-3.13-blue)
 
 ## 🎯 Objectif final
 
