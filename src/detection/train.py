@@ -30,6 +30,12 @@ def parse_args() -> argparse.Namespace:
         "--device", default="cpu",
         help="'cpu', '0' pour le premier GPU, '0,1' pour plusieurs GPUs",
     )
+    parser.add_argument(
+        "--freeze", type=int, default=None,
+        help=(
+            "Nombre de couches a geler depuis le debut du backbone (ex: 10). "
+        ),
+    )
     parser.add_argument("--name", default="baseline", help="Nom du run (dossier dans runs/detect/)")
     parser.add_argument(
         "--data", type=Path, default=DATASET_YAML,
@@ -67,6 +73,7 @@ def main() -> None:
         mosaic=args.mosaic,
         scale=args.scale,
         erasing=args.erasing,
+        freeze=args.freeze,
     )
 
 
