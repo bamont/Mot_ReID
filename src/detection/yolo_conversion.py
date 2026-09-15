@@ -21,6 +21,7 @@ GT_COLUMNS = [
     "conf", "class", "visibility",
 ]
 PEDESTRIAN_CLASS = 1
+MIN_VISIBILITY = 0.3
 
 
 @dataclass(frozen=True)
@@ -61,8 +62,8 @@ def parse_gt_line(line: str) -> dict:
 
 
 def should_keep_annotation(ann: dict) -> bool:
-    """Applique les filtres class==1 et conf==1 decidés et visibility>0.3 pendant l'EDA."""
-    return int(ann["class"]) == PEDESTRIAN_CLASS and int(ann["conf"]) == 1 and ann["visibility"] > 0.3
+    """Applique les filtres class==1 et conf==1 decidés et visibility>MIN_VISIBILITY pendant l'EDA."""
+    return int(ann["class"]) == PEDESTRIAN_CLASS and int(ann["conf"]) == 1 and ann["visibility"] > MIN_VISIBILITY
 
 
 def clip_bbox(

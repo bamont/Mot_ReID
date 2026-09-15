@@ -1,6 +1,7 @@
 """Tests du module de conversion MOT17 -> YOLO.
 
-Utilise des données synthétiques pour valider la logique de filtrage/clipping/split.
+Utilise des données synthétiques : pas besoin d'avoir MOT17 telechargé
+pour valider la logique de filtrage/clipping/split.
 """
 
 import pytest
@@ -55,6 +56,19 @@ class TestShouldKeepAnnotation:
     def test_rejects_conf_zero(self):
         ann = {"class": 1, "conf": 0}
         assert should_keep_annotation(ann) is False
+
+    def test_rejects_low_visibility(self):
+        ann = {"class": 1, "conf": 1, "visibility": 0.1}
+        assert should_keep_annotation(ann) is False
+
+    def test_keeps_visibility_at_threshold(self):
+        ann = {"class": 1, "conf": 1, "visibility": 0.3}
+        assert should_keep_annotation(ann) is True
+
+    def test_missing_visibility_defaults_to_visible(self):
+        # Retro-compatibilite : si le champ est absent, on ne filtre pas dessus.
+        ann = {"class": 1, "conf": 1}
+        assert should_keep_annotation(ann) is True
 
 
 class TestClipBbox:
