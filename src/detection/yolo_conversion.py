@@ -3,6 +3,7 @@
 Règles issues de l'EDA (voir notebooks/01_eda.ipynb) :
 - Ne garder que class == 1 (pieton) -- MOT17 annote aussi cyclistes, distracteurs, etc.
 - Ne garder que conf == 1 -- conf == 0 signifie "a ignorer" selon le devkit MOT17.
+- Ne garder que visibility > 0.3 -- les boxes tres peu visibles sont trop difficiles a detecter.
 - Clipper les bbox aux dimensions reelles de l'image -- certaines boxes sortent du cadre.
 - Splitter train/val par VIDEO DE BASE (ex: "MOT17-02"), jamais par variante
   (MOT17-02-DPM/FRCNN/SDP sont la meme video avec les memes annotations gt --
@@ -60,8 +61,8 @@ def parse_gt_line(line: str) -> dict:
 
 
 def should_keep_annotation(ann: dict) -> bool:
-    """Applique les filtres class==1 et conf==1 decides pendant l'EDA."""
-    return int(ann["class"]) == PEDESTRIAN_CLASS and int(ann["conf"]) == 1
+    """Applique les filtres class==1 et conf==1 decidés et visibility>0.3 pendant l'EDA."""
+    return int(ann["class"]) == PEDESTRIAN_CLASS and int(ann["conf"]) == 1 and ann["visibility"] > 0.3
 
 
 def clip_bbox(
