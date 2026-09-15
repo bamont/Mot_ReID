@@ -22,7 +22,8 @@ DATASET_YAML = DATA_PROCESSED / "mot17_yolo" / "dataset.yaml"
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="yolov8n.pt", help="Checkpoint de depart (yolov8n/s/m/l/x.pt)")
-    parser.add_argument("--epochs", type=int, default=20)
+    parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--patience", type=int, default=10, help="Early stopping")
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--batch", type=int, default=16)
     parser.add_argument(
@@ -56,10 +57,16 @@ def main() -> None:
     model.train(
         data=str(args.data),
         epochs=args.epochs,
+        patience=args.patience,
         imgsz=args.imgsz,
         batch=args.batch,
         device=args.device,
         name=args.name,
+        lr0=args.lr0,
+        optimizer=args.optimizer,
+        mosaic=args.mosaic,
+        scale=args.scale,
+        erasing=args.erasing,
     )
 
 
