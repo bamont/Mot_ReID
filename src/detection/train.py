@@ -22,7 +22,7 @@ DATASET_YAML = DATA_PROCESSED / "mot17_yolo" / "dataset.yaml"
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="yolov8n.pt", help="Checkpoint de depart (yolov8n/s/m/l/x.pt)")
-    parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--batch", type=int, default=16)
     parser.add_argument(
@@ -34,6 +34,12 @@ def parse_args() -> argparse.Namespace:
         "--data", type=Path, default=DATASET_YAML,
         help="Chemin vers dataset.yaml (par defaut: %(default)s)",
     )
+    parser.add_argument("--lr0", type=float, default=0.001, help="Learning rate initial")
+    parser.add_argument("--optimizer", default="AdamW", help="'auto' pour laisser Ultralytics choisir")
+
+    parser.add_argument("--mosaic", type=float, default=0.3)
+    parser.add_argument("--scale", type=float, default=0.2)
+    parser.add_argument("--erasing", type=float, default=0.0)
     return parser.parse_args()
 
 
