@@ -63,8 +63,11 @@ def parse_gt_line(line: str) -> dict:
 
 def should_keep_annotation(ann: dict) -> bool:
     """Applique les filtres class==1 et conf==1 decidés et visibility>MIN_VISIBILITY pendant l'EDA."""
-    return int(ann["class"]) == PEDESTRIAN_CLASS and int(ann["conf"]) == 1 and ann["visibility"] > MIN_VISIBILITY
-
+    return (
+        int(ann["class"]) == PEDESTRIAN_CLASS
+        and int(ann["conf"]) == 1
+        and float(ann.get("visibility", 1.0)) >= MIN_VISIBILITY
+    )
 
 def clip_bbox(
     bb_left: float, bb_top: float, bb_width: float, bb_height: float,

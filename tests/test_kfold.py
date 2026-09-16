@@ -1,4 +1,4 @@
-"""Tests du module de préparation des folds de validation croisée."""
+"""Tests du module de preparation des folds de validation croisee."""
 
 import csv
 
@@ -87,12 +87,14 @@ class TestPrepareFold:
         assert n_train == 3  # MOT17-02 (x2) + MOT17-05
         assert n_val == 1  # MOT17-04
 
-    def test_symlinks_point_to_real_content(self, tmp_path, pool_dir):
+    def test_linked_files_have_correct_content(self, tmp_path, pool_dir):
+        # Le type de lien (symlink/hardlink/copie) depend de la plateforme
+        # (cf. _link_or_copy) -- on verifie le contenu, pas le mecanisme.
         fold_dir = tmp_path / "fold_MOT17-04"
         prepare_fold(pool_dir, MANIFEST_ROWS, held_out_base="MOT17-04", fold_output_dir=fold_dir)
 
         val_img = fold_dir / "images" / "val" / "MOT17-04-FRCNN_000001.jpg"
-        assert val_img.is_symlink()
+        assert val_img.exists()
         assert val_img.read_bytes() == b"fake-jpg-content"
 
     def test_writes_dataset_yaml(self, tmp_path, pool_dir):
@@ -109,8 +111,8 @@ class TestPrepareFold:
         # Deux folds differents dans des dossiers de sortie differents ne doivent pas interferer
         fold_02 = tmp_path / "fold_MOT17-02"
         fold_04 = tmp_path / "fold_MOT17-04"
-        _, n_val_02 = prepare_fold(pool_dir, MANIFEST_ROWS, "MOT17-02", fold_02)
-        _, n_val_04 = prepare_fold(pool_dir, MANIFEST_ROWS, "MOT17-04", fold_04)
+        n_train_02, n_val_02 = prepare_fold(pool_dir, MANIFEST_ROWS, "MOT17-02", fold_02)
+        n_train_04, n_val_04 = prepare_fold(pool_dir, MANIFEST_ROWS, "MOT17-04", fold_04)
 
         assert n_val_02 == 2  # les 2 frames MOT17-02
         assert n_val_04 == 1  # la frame MOT17-04
