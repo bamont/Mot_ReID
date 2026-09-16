@@ -47,6 +47,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mosaic", type=float, default=0.3)
     parser.add_argument("--scale", type=float, default=0.2)
     parser.add_argument("--erasing", type=float, default=0.0)
+    
+    parser.add_argument(
+        "--domain-augment", action="store_true",
+        help="Active l'augmentation a la volée nuit/flou (monkey-patch Albumentations)",
+    )
     return parser.parse_args()
 
 
@@ -58,6 +63,15 @@ def main() -> None:
             f"dataset.yaml introuvable a {args.data}. "
             "launchez d'abord le script de preparation du dataset src/detection/build_dataset.py"
         )
+        
+    if args.domain_augment:
+        from src.detection.onthefly_augment import patch_ultralytics_albumentations
+ 
+        patched = patch_ultralytics_albumentations()
+        if not patched:
+            print("ATTENTION : --domain-augment demande mais le patch a echoue (ultralytics introuvable ?)")
+        else:
+            print("Pipeline Albumentations patche : MotionBlur + RandomGamma/RandomBrightnessContrast actifs")
 
     model = YOLO(args.model)
     model.train(
