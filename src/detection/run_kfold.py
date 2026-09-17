@@ -29,20 +29,26 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--pool-dir", type=Path, required=True, help="Dossier du pool (contient manifest.csv)")
     parser.add_argument("--fold-root", type=Path, default=None, help="Ou ecrire les folds (defaut: a cote du pool)")
-    parser.add_argument("--model", default="yolo26n.pt")
+    parser.add_argument("--model", default="yolo26n.pt", help="yolo*.pt ou rtdetr-*.pt")
     parser.add_argument("--epochs", type=int, default=80)
     parser.add_argument("--patience", type=int, default=20)
-    parser.add_argument("--freeze", type=int, default=10)
-    parser.add_argument("--lr0", type=float, default=0.0003)
+    parser.add_argument("--freeze", type=int, default=None, help="Defaut auto selon le modele (voir train.py) si non fourni")
+    parser.add_argument("--lr0", type=float, default=None, help="Defaut auto selon le modele (voir train.py) si non fourni")
     parser.add_argument("--imgsz", type=int, default=640)
-    parser.add_argument("--batch", type=int, default=32)
+    parser.add_argument("--batch", type=int, default=None, help="Defaut auto selon le modele (voir train.py) si non fourni")
     parser.add_argument("--device", default="0")
     parser.add_argument(
         "--domain-augment", action="store_true",
         help="Propage --domain-augment a chaque fold (voir train.py)",
     )
-    parser.add_argument("--summary-csv", type=Path, default=Path("kfold_summary.csv"))
-    return parser.parse_args()
+    parser.add_argument("--summary-csv", type=Path, default=None)
+    args = parser.parse_args()
+
+    if args.summary_csv is None:
+        suffix = "rtdetr" if "rtdetr" in args.model.lower() else args.model.replace(".pt", "")
+        args.summary_csv = Path(f"kfold_summary_{suffix}.csv")
+
+    return args
  
  
 def best_metrics_from_results_csv(results_csv: Path) -> dict[str, float]:
@@ -80,13 +86,16 @@ def run_fold(
         "--model", args.model,
         "--epochs", str(args.epochs),
         "--patience", str(args.patience),
-        "--freeze", str(args.freeze),
-        "--lr0", str(args.lr0),
         "--imgsz", str(args.imgsz),
-        "--batch", str(args.batch),
         "--device", args.device,
         "--name", run_name,
     ]
+    if args.freeze is not None:
+        cmd += ["--freeze", str(args.freeze)]
+    if args.lr0 is not None:
+        cmd += ["--lr0", str(args.lr0)]
+    if args.batch is not None:
+        cmd += ["--batch", str(args.batch)]
     if args.domain_augment:
         cmd.append("--domain-augment")
     subprocess.run(cmd, check=True)
