@@ -4,6 +4,7 @@ import argparse
 import csv
 from pathlib import Path
 from typing import Any
+import torch
 
 from src.detection.kfold import list_base_sequences, prepare_fold, read_manifest
 
@@ -49,6 +50,8 @@ def main() -> None:
     fold_root = args.fold_root or (args.pool_dir.parent / "kfold_runs")
 
     model = RTDETR(args.model)
+    device = 0 if torch.cuda.is_available() else "cpu"
+    model.to(device)
 
     all_metrics = []
     for held_out in base_names:
