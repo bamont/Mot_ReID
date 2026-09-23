@@ -150,22 +150,22 @@ class TestEnableDomainAugment:
         def init_without_transforms(self, p=1.0):
             pass
 
-        fake_augment_module = _install_fake_ultralytics(monkeypatch, init_without_transforms)
-
         def fake_patch(pipeline_factory=None):
             calls.append("patched")
             return True
 
-        monkeypatch.setattr("src.detection.onthefly_augment.patch_ultralytics_albumentations", fake_patch)
+        monkeypatch.setattr(
+            "src.detection.onthefly_augment.patch_ultralytics_albumentations", fake_patch
+        )
 
         train_kwargs = {"epochs": 20}
         result = enable_domain_augment(train_kwargs)
 
         assert calls == ["patched"]
-        # Pas de cle "augmentations" ajoutee dans ce chemin (le monkey-patch
-        # gere tout en interne, pas besoin de modifier train_kwargs)
+        # Pas de clé "augmentations" ajoutée dans ce chemin (le monkey-patch
+        # gère tout en interne, pas besoin de modifier train_kwargs)
         assert "augmentations" not in result
-        assert result["epochs"] == 20  # kwargs d'origine preserves
+        assert result["epochs"] == 20  # kwargs d'origine préservés
 
     def test_noop_when_ultralytics_not_installed(self, monkeypatch):
         monkeypatch.setitem(sys.modules, "ultralytics", None)

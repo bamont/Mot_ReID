@@ -133,15 +133,36 @@ class TestConvertFrameAnnotations:
     def test_filters_and_converts(self):
         annotations = [
             {"class": 1, "conf": 1, "bb_left": 10, "bb_top": 10, "bb_width": 50, "bb_height": 50},
-            {"class": 7, "conf": 1, "bb_left": 10, "bb_top": 10, "bb_width": 50, "bb_height": 50},  # non-pieton
-            {"class": 1, "conf": 0, "bb_left": 10, "bb_top": 10, "bb_width": 50, "bb_height": 50},  # conf=0
+            {
+                "class": 7,
+                "conf": 1,
+                "bb_left": 10,
+                "bb_top": 10,
+                "bb_width": 50,
+                "bb_height": 50,
+            },  # non-pieton
+            {
+                "class": 1,
+                "conf": 0,
+                "bb_left": 10,
+                "bb_top": 10,
+                "bb_width": 50,
+                "bb_height": 50,
+            },  # conf=0
         ]
         boxes = convert_frame_annotations(annotations, img_width=200, img_height=200)
         assert len(boxes) == 1
 
     def test_skips_out_of_frame_silently(self):
         annotations = [
-            {"class": 1, "conf": 1, "bb_left": -500, "bb_top": -500, "bb_width": 50, "bb_height": 50},
+            {
+                "class": 1,
+                "conf": 1,
+                "bb_left": -500,
+                "bb_top": -500,
+                "bb_width": 50,
+                "bb_height": 50,
+            },
         ]
         boxes = convert_frame_annotations(annotations, img_width=200, img_height=200)
         assert boxes == []

@@ -17,8 +17,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 GT_COLUMNS = [
-    "frame", "id", "bb_left", "bb_top", "bb_width", "bb_height",
-    "conf", "class", "visibility",
+    "frame",
+    "id",
+    "bb_left",
+    "bb_top",
+    "bb_width",
+    "bb_height",
+    "conf",
+    "class",
+    "visibility",
 ]
 PEDESTRIAN_CLASS = 1
 MIN_VISIBILITY = 0.3
@@ -48,7 +55,9 @@ def base_sequence_name(sequence_dir_name: str) -> str:
     """
     match = re.match(r"(MOT17-\d+)", sequence_dir_name)
     if not match:
-        raise ValueError(f"Nom de sequence inattendu, ne matche pas 'MOT17-XX...': {sequence_dir_name!r}")
+        raise ValueError(
+            f"Nom de sequence inattendu, ne matche pas 'MOT17-XX...': {sequence_dir_name!r}"
+        )
     return match.group(1)
 
 
@@ -56,9 +65,11 @@ def parse_gt_line(line: str) -> dict:
     """Parse une ligne brute de gt.txt en dict type."""
     parts = line.strip().split(",")
     if len(parts) < len(GT_COLUMNS):
-        raise ValueError(f"Ligne gt.txt malformee (attendu {len(GT_COLUMNS)} champs, recu {len(parts)}): {line!r}")
+        raise ValueError(
+            f"Ligne gt.txt malformee (attendu {len(GT_COLUMNS)} champs, recu {len(parts)}): {line!r}"
+        )
     values = [float(p) for p in parts[: len(GT_COLUMNS)]]
-    return dict(zip(GT_COLUMNS, values))
+    return dict(zip(GT_COLUMNS, values, strict=False))
 
 
 def should_keep_annotation(ann: dict) -> bool:
@@ -69,9 +80,14 @@ def should_keep_annotation(ann: dict) -> bool:
         and float(ann.get("visibility", 1.0)) >= MIN_VISIBILITY
     )
 
+
 def clip_bbox(
-    bb_left: float, bb_top: float, bb_width: float, bb_height: float,
-    img_width: int, img_height: int,
+    bb_left: float,
+    bb_top: float,
+    bb_width: float,
+    bb_height: float,
+    img_width: int,
+    img_height: int,
 ) -> tuple[float, float, float, float]:
     """Clippe une bbox (left, top, width, height) aux dimensions de l'image.
 
@@ -88,8 +104,12 @@ def clip_bbox(
 
 
 def mot_bbox_to_yolo(
-    bb_left: float, bb_top: float, bb_width: float, bb_height: float,
-    img_width: int, img_height: int,
+    bb_left: float,
+    bb_top: float,
+    bb_width: float,
+    bb_height: float,
+    img_width: int,
+    img_height: int,
 ) -> YoloBox:
     """Convertit une bbox MOT (left, top, width, height en pixels) en YoloBox normalisee.
 
@@ -104,11 +124,15 @@ def mot_bbox_to_yolo(
     y_center = (y1 + h / 2) / img_height
     norm_width = w / img_width
     norm_height = h / img_height
-    return YoloBox(class_id=0, x_center=x_center, y_center=y_center, width=norm_width, height=norm_height)
+    return YoloBox(
+        class_id=0, x_center=x_center, y_center=y_center, width=norm_width, height=norm_height
+    )
 
 
 def convert_frame_annotations(
-    annotations: list[dict], img_width: int, img_height: int,
+    annotations: list[dict],
+    img_width: int,
+    img_height: int,
 ) -> list[YoloBox]:
     """Filtre et convertit toutes les annotations d'une frame en boxes YOLO.
 
@@ -121,14 +145,23 @@ def convert_frame_annotations(
             continue
         try:
             boxes.append(
-                mot_bbox_to_yolo(ann["bb_left"], ann["bb_top"], ann["bb_width"], ann["bb_height"], img_width, img_height)
+                mot_bbox_to_yolo(
+                    ann["bb_left"],
+                    ann["bb_top"],
+                    ann["bb_width"],
+                    ann["bb_height"],
+                    img_width,
+                    img_height,
+                )
             )
         except ValueError:
             continue
     return boxes
 
 
-def split_base_sequences(base_names: list[str], val_fraction: float = 0.2, seed: int = 42) -> tuple[list[str], list[str]]:
+def split_base_sequences(
+    base_names: list[str], val_fraction: float = 0.2, seed: int = 42
+) -> tuple[list[str], list[str]]:
     """Split train/val PAR VIDEO DE BASE, jamais par variante DPM/FRCNN/SDP.
 
     A appeler avec des noms deja deduppliques (ex: ["MOT17-02", "MOT17-04", ...]),

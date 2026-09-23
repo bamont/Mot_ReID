@@ -34,13 +34,17 @@ def aggregate(all_metrics: list[dict[str, float]]) -> tuple[float, float]:
     values = [m["mAP50-95"] for m in all_metrics]
     mean_v = sum(values) / len(values)
     variance = sum((x - mean_v) ** 2 for x in values) / len(values)
-    return mean_v, variance ** 0.5
+    return mean_v, variance**0.5
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--pool-dir", type=Path, required=True)
-    parser.add_argument("--fold-root", type=Path, default=None, help="Reutilise les folds du k-fold si deja generes")
+    parser.add_argument(
+        "--fold-root", type=Path, default=None, help="Reutilise les folds du k-fold si deja generes"
+    )
     parser.add_argument("--model", default="yolo11n.pt")
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--summary-csv", type=Path, default=Path("zero_shot_summary.csv"))
@@ -78,7 +82,9 @@ def main() -> None:
     print("\nComparer a la baseline fine-tunee (freeze=10, sans domain-augment) : 0.465 +/- 0.158")
 
     with args.summary_csv.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["held_out", "precision", "recall", "mAP50", "mAP50-95"])
+        writer = csv.DictWriter(
+            f, fieldnames=["held_out", "precision", "recall", "mAP50", "mAP50-95"]
+        )
         writer.writeheader()
         writer.writerows(all_metrics)
     print(f"\nDetail par fold ecrit dans {args.summary_csv}")

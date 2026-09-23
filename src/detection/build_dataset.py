@@ -1,5 +1,20 @@
 from __future__ import annotations
 
+import argparse
+import configparser
+import csv
+import shutil
+from pathlib import Path
+
+from src.config import DATA_PROCESSED, MOT17_DIR
+from src.detection.yolo_conversion import (
+    base_sequence_name,
+    convert_frame_annotations,
+    parse_gt_line,
+    split_base_sequences,
+    write_yolo_label_file,
+)
+
 """Construit le dataset YOLO complet à partir de MOT17.
 
 Usage:
@@ -35,21 +50,6 @@ Deux modes :
            labels/*.txt
            manifest.csv   (colonnes: filename, base_sequence)
 """
-
-import argparse
-import configparser
-import csv
-import shutil
-from pathlib import Path
-
-from src.config import DATA_PROCESSED, MOT17_DIR
-from src.detection.yolo_conversion import (
-    base_sequence_name,
-    convert_frame_annotations,
-    parse_gt_line,
-    split_base_sequences,
-    write_yolo_label_file,
-)
 
 OUTPUT_DIR = DATA_PROCESSED / "mot17_yolo"
 POOL_DIR = DATA_PROCESSED / "mot17_yolo_pool"
@@ -184,7 +184,9 @@ def build_pool_dataset() -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--mode", choices=["split", "pool"], default="split")
     args = parser.parse_args()
 

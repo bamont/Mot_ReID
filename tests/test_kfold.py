@@ -82,7 +82,9 @@ class TestPrepareFold:
 
     def test_correct_counts_per_split(self, tmp_path, pool_dir):
         fold_dir = tmp_path / "fold_MOT17-04"
-        n_train, n_val = prepare_fold(pool_dir, MANIFEST_ROWS, held_out_base="MOT17-04", fold_output_dir=fold_dir)
+        n_train, n_val = prepare_fold(
+            pool_dir, MANIFEST_ROWS, held_out_base="MOT17-04", fold_output_dir=fold_dir
+        )
 
         assert n_train == 3  # MOT17-02 (x2) + MOT17-05
         assert n_val == 1  # MOT17-04

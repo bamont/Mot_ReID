@@ -23,32 +23,48 @@ def is_rtdetr(model_name: str) -> bool:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
 
     # --- Modele et duree ---
-    parser.add_argument("--model", default="yolo26n.pt", help="Checkpoint de depart (yolo*.pt ou rtdetr-*.pt)")
-    parser.add_argument("--epochs", type=int, default=20, help="Le pic etait a l'epoch 1-6 au 1er benchmark")
-    parser.add_argument("--patience", type=int, default=5, help="Early stopping : epochs sans amelioration avant arret")
+    parser.add_argument(
+        "--model", default="yolo26n.pt", help="Checkpoint de depart (yolo*.pt ou rtdetr-*.pt)"
+    )
+    parser.add_argument(
+        "--epochs", type=int, default=20, help="Le pic etait a l'epoch 1-6 au 1er benchmark"
+    )
+    parser.add_argument(
+        "--patience",
+        type=int,
+        default=5,
+        help="Early stopping : epochs sans amelioration avant arret",
+    )
     parser.add_argument("--imgsz", type=int, default=640)
-    parser.add_argument("--batch", type=int, default=None, help="Defaut auto selon le modele si non fourni")
+    parser.add_argument(
+        "--batch", type=int, default=None, help="Defaut auto selon le modele si non fourni"
+    )
     parser.add_argument("--device", default="cpu", help="'cpu', '0' pour le 1er GPU")
     parser.add_argument("--name", default="run", help="Nom du run (dossier dans runs/detect/)")
     parser.add_argument("--data", type=Path, default=DATASET_YAML)
     parser.add_argument(
-        "--freeze", type=int, default=None,
-        help=(
-            "Nombre de couches a geler depuis le debut du backbone (ex: 10 pour YOLO, "
-            "~21 pour RT-DETR-l). But : preserver les features COCO utiles plutot que "
-            "les ecraser en fine-tunant sur seulement 6 scenes MOT17 -- cf. DECISIONS.md."
-        ),
+        "--freeze",
+        type=int,
+        default=None,
+        help=("Nombre de couches a geler depuis le debut du backbone"),
     )
-    parser.add_argument("--lr0", type=float, default=None, help="Defaut auto selon le modele si non fourni")
-    parser.add_argument("--optimizer", default="AdamW", help="'auto' pour laisser Ultralytics choisir")
+    parser.add_argument(
+        "--lr0", type=float, default=None, help="Defaut auto selon le modele si non fourni"
+    )
+    parser.add_argument(
+        "--optimizer", default="AdamW", help="'auto' pour laisser Ultralytics choisir"
+    )
     parser.add_argument("--mosaic", type=float, default=0.3)
     parser.add_argument("--scale", type=float, default=0.2)
     parser.add_argument("--erasing", type=float, default=0.0)
     parser.add_argument(
-        "--domain-augment", action="store_true",
+        "--domain-augment",
+        action="store_true",
         help="Active l'augmentation a la volee nuit/flou (monkey-patch Albumentations)",
     )
 
@@ -71,13 +87,20 @@ def main() -> None:
     lr0 = args.lr0 if args.lr0 is not None else (0.0001 if rtdetr else 0.001)
 
     if args.domain_augment:
-        from src.detection.onthefly_augment import enable_domain_augment, supports_native_augmentations
+        from src.detection.onthefly_augment import (
+            enable_domain_augment,
+            supports_native_augmentations,
+        )
 
         native = supports_native_augmentations()
         if native is True:
-            print("Robustesse nuit/flou activee via le mecanisme natif Ultralytics (augmentations=)")
+            print(
+                "Robustesse nuit/flou activee via le mecanisme natif Ultralytics (augmentations=)"
+            )
         elif native is False:
-            print("Mecanisme natif indisponible sur cette version d'Ultralytics -- repli sur le monkey-patch")
+            print(
+                "Mecanisme natif indisponible sur cette version d'Ultralytics -- repli sur le monkey-patch"
+            )
         else:
             print("ATTENTION : --domain-augment demande mais ultralytics introuvable")
 
@@ -85,7 +108,9 @@ def main() -> None:
         from ultralytics import RTDETR
 
         model = RTDETR(args.model)
-        print(f"RT-DETR detecte : batch={batch}, lr0={lr0} (defauts adaptes, sauf si surcharges en CLI)")
+        print(
+            f"RT-DETR detecte : batch={batch}, lr0={lr0} (defauts adaptes, sauf si surcharges en CLI)"
+        )
     else:
         from ultralytics import YOLO
 

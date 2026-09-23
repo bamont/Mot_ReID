@@ -26,7 +26,7 @@ reid:
 
 processed:
   detection_yolo_format: "data/processed/mot17_yolo"
-  reid_train_pairs: "data/processed/market1501_train_pairs"
+  reid_triplets: "data/processed/market1501_triplets"
 
 notes: >
   Voir scripts/download_data.sh pour le telechargement automatique.
