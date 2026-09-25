@@ -1,7 +1,7 @@
 """Tests du module de parsing/indexation Market-1501.
 
-Utilise des fichiers vides avec des noms synthétiques : pas besoin d'avoir
-Market-1501 téléchargé pour valider la logique de parsing/filtrage/split.
+Utilise des fichiers vides avec des noms synthetiques : pas besoin d'avoir
+Market-1501 telecharge pour valider la logique de parsing/filtrage/split.
 """
 
 import pytest
@@ -11,6 +11,7 @@ from src.reid.market1501 import (
     count_images,
     identities_with_min_images,
     is_valid_identity,
+    list_images,
     parse_filename,
     split_identities,
     subindex,
@@ -63,8 +64,8 @@ class TestBuildIdentityIndex:
             tmp_path,
             [
                 "0002_c1s1_000451_03.jpg",
-                "0002_c1s1_000452_01.jpg",  # meme id, même caméra
-                "0002_c2s1_000010_01.jpg",  # meme id, autre caméra
+                "0002_c1s1_000452_01.jpg",  # meme id, meme camera
+                "0002_c2s1_000010_01.jpg",  # meme id, autre camera
                 "0007_c1s1_000001_01.jpg",  # autre id
             ],
         )
@@ -107,13 +108,13 @@ class TestBuildIdentityIndex:
 class TestIdentitiesWithMinImages:
     def test_filters_singleton_identities(self):
         index = {
-            1: {1: ["a.jpg", "b.jpg"]},  # 2 images -> éligible
-            2: {1: ["c.jpg"]},  # 1 image -> pas éligible
+            1: {1: ["a.jpg", "b.jpg"]},  # 2 images -> eligible
+            2: {1: ["c.jpg"]},  # 1 image -> pas eligible
         }
         assert identities_with_min_images(index, min_images=2) == [1]
 
     def test_counts_across_cameras(self):
-        index = {1: {1: ["a.jpg"], 2: ["b.jpg"]}}  # 1 image par caméra, 2 au total
+        index = {1: {1: ["a.jpg"], 2: ["b.jpg"]}}  # 1 image par camera, 2 au total
         assert identities_with_min_images(index, min_images=2) == [1]
 
 
@@ -152,3 +153,37 @@ class TestSubindex:
     def test_keeps_only_requested_identities(self):
         index = {1: {1: ["a.jpg"]}, 2: {1: ["b.jpg"]}, 3: {1: ["c.jpg"]}}
         assert set(subindex(index, [1, 3])) == {1, 3}
+
+
+class TestListImages:
+    def _touch(self, tmp_path, names):
+        for name in names:
+            (tmp_path / name).touch()
+        return tmp_path
+
+    def test_returns_flat_list_with_pid_and_camera(self, tmp_path):
+        self._touch(
+            tmp_path,
+            ["0002_c1s1_000451_03.jpg", "0002_c2s1_000010_01.jpg", "0007_c1s1_000001_01.jpg"],
+        )
+        images = list_images(tmp_path)
+        assert len(images) == 3
+        assert {im.pid for im in images} == {2, 7}
+
+    def test_excludes_junk_and_distractors_by_default(self, tmp_path):
+        self._touch(
+            tmp_path,
+            [
+                "0000_c1s1_000001_01.jpg",
+                "-1_c1s1_000002_01.jpg",
+                "0002_c1s1_000451_03.jpg",
+            ],
+        )
+        images = list_images(tmp_path)
+        assert len(images) == 1
+        assert images[0].pid == 2
+
+    def test_valid_only_false_keeps_junk(self, tmp_path):
+        self._touch(tmp_path, ["0000_c1s1_000001_01.jpg", "0002_c1s1_000451_03.jpg"])
+        images = list_images(tmp_path, valid_only=False)
+        assert {im.pid for im in images} == {0, 2}

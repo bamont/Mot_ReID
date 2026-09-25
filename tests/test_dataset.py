@@ -1,6 +1,7 @@
-"""Tests de TripletMarket1501Dataset avec de petites images PNG generées à la volée.
+"""Tests de TripletMarket1501Dataset avec de petites images PNG generees a la volee.
 
-Ce module a besoin de vraies images ouvrables par Pillow puisque
+Contrairement a test_market1501.py / test_triplet_sampling.py (fichiers vides, noms
+synthetiques), ce module a besoin de vraies images ouvrables par Pillow puisque
 ``__getitem__`` charge et transforme les fichiers.
 """
 
@@ -10,7 +11,7 @@ import pytest
 from PIL import Image
 from torchvision import transforms
 
-from src.reid.dataset import TripletMarket1501Dataset
+from src.reid.dataset import ImageListDataset, TripletMarket1501Dataset
 
 
 def _make_image(path: Path, color: tuple[int, int, int]) -> Path:
@@ -20,7 +21,7 @@ def _make_image(path: Path, color: tuple[int, int, int]) -> Path:
 
 @pytest.fixture
 def index(tmp_path):
-    """3 identités : deux avec 2 caméras (positif cross-camera possible), une mono-caméra."""
+    """3 identites : deux avec 2 cameras (positif cross-camera possible), une mono-camera."""
     return {
         1: {
             1: [_make_image(tmp_path / "1_c1_a.jpg", (255, 0, 0))],
@@ -68,7 +69,8 @@ class TestTripletMarket1501Dataset:
         assert a["negative_id"] == b["negative_id"]
 
     def test_set_epoch_changes_sampled_triplets(self, index):
-        # Sur assez d'items, changer d'époque doit faire varier au moins un tirage.
+        # Sur assez d'items, changer d'epoque doit faire varier au moins un tirage
+        # (pas garanti item par item, donc on compare l'ensemble sur plusieurs index).
         ds = TripletMarket1501Dataset(index, length=20, seed=42)
         epoch0 = [(ds[i]["anchor_id"], ds[i]["negative_id"]) for i in range(20)]
         ds.set_epoch(1)
@@ -81,3 +83,27 @@ class TestTripletMarket1501Dataset:
         results_a = [(ds_a[i]["anchor_id"], ds_a[i]["negative_id"]) for i in range(10)]
         results_b = [(ds_b[i]["anchor_id"], ds_b[i]["negative_id"]) for i in range(10)]
         assert results_a == results_b
+
+
+class TestImageListDataset:
+    def test_len_matches_paths(self, index):
+        paths = [p for cams in index.values() for imgs in cams.values() for p in imgs]
+        ds = ImageListDataset(paths)
+        assert len(ds) == len(paths)
+
+    def test_getitem_without_transform_returns_pil_image(self, index):
+        paths = [p for cams in index.values() for imgs in cams.values() for p in imgs]
+        ds = ImageListDataset(paths)
+        assert isinstance(ds[0], Image.Image)
+
+    def test_getitem_with_transform_returns_tensor(self, index):
+        paths = [p for cams in index.values() for imgs in cams.values() for p in imgs]
+        transform = transforms.Compose([transforms.ToTensor()])
+        ds = ImageListDataset(paths, transform=transform)
+        assert ds[0].shape == (3, 8, 8)
+
+    def test_preserves_order(self, index):
+        paths = [p for cams in index.values() for imgs in cams.values() for p in imgs]
+        ds = ImageListDataset(paths)
+        for i, path in enumerate(paths):
+            assert ds[i].size == Image.open(path).size

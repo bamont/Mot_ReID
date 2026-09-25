@@ -98,3 +98,42 @@ donnée) tout en variant les combinaisons vues au fil de l'entraînement. `build
 exporte quand même un `sample_triplets.csv` figé (5000 triplets par défaut) pour
 inspection manuelle et illustration dans le rapport, mais ce n'est pas ce qui sert à
 l'entraînement.
+
+## Du négatif aleatoire au batch-hard mining (constat empirique)
+
+**Constat** : premier entraînement (négatif aléatoire, `TripletMarket1501Dataset`, 30
+époques) : `train_loss` s'effondre dès l'époque 3 (0.089 → 0.003), `val_margin_ok` monte
+à ~93%. Mais le vrai mAP mesuré sur `query/`+`bounding_box_test/` (protocole officiel,
+`src/reid/evaluate.py`) n'est que de **24.9%** (rank-1 42.6%), très en dessous des
+baselines triplet loss publiées sur Market-1501 (~65-75% mAP).
+
+**Diagnostic** : `val_margin_ok` ne teste jamais le modèle contre un négatif difficile --
+avec un négatif tiré au hasard parmi 750 autres identités, la quasi-totalité des triplets
+sont triviaux dès que l'espace d'embedding est grossièrement organisé. Le modèle "réussit"
+sa métrique de suivi sans plus apprendre, alors qu'un vrai retrieval sur 13 102 images de
+galerie confronte constamment le modèle à des négatifs proches (autre personne portant des
+vêtements similaires, même pose, etc.).
+
+**Décision** : passer au **batch-hard mining** (Hermans et al. 2017) : batches de P
+identités x K images, positif/négatif les plus durs minés à l'intérieur de chaque batch
+plutôt qu'un triplet aléatoire pré-échantillonné. Implémenté dans `src/reid/pk_sampling.py`
++ `--mining batch-hard` (nouveau défaut de `train.py`), tout en gardant `--mining random`
+disponible pour comparaison directe des deux courbes de mAP sur les mêmes données.
+
+**Résultat** : même protocole d'évaluation (`src/reid/evaluate.py`), mêmes 676 identités
+train / 75 val, 30 époques dans les deux cas :
+
+| Mining | val_margin_ok (fin d'entraînement) | mAP réel | Rank-1 |
+|---|---|---|---|
+| random (négatif aléatoire) | 93.0% | 24.9% | 42.6% |
+| batch-hard (P=16, K=4) | 46.5% | **63.8%** | **80.8%** |
+
+Confirme le diagnostic : `val_margin_ok` est nettement PLUS BAS en batch-hard (46% vs 93%)
+alors que le vrai mAP est bien MEILLEUR (×2.5) -- les deux métriques ne mesurent pas la
+même difficulté, val_margin_ok en batch-hard reste un indicateur utile (sa progression
+27%→49% sur l'entraînement montre que le modèle continue d'apprendre) mais les valeurs
+absolues ne sont pas comparables entre les deux modes. mAP obtenu (63.8%) proche des
+baselines triplet loss publiées sur Market-1501 (~65-75%), sans encore de re-ranking ni de
+scheduler de learning rate -- `val_loss` plafonne des l'epoque ~10 (0.12-0.14) pendant que
+`train_loss` continue de baisser (0.29→0.009) : signe de sur-apprentissage naissant,
+piste suivante pour aller chercher les derniers points.

@@ -1,17 +1,18 @@
-"""Parsing et indéxation du dataset Market-1501 pour la ré-identification.
+"""Parsing et indexation du dataset Market-1501 pour la ré-identification.
 
 Convention de nommage Market-1501 (ex: ``0002_c1s1_000451_03.jpg``) :
     <pid>_c<camera>s<sequence>_<frame>_<box>.jpg
-        pid     : identité de la personne (``-1`` = distracteur, ``0000`` = junk,
-                   tous deux à exclure de l'entrainement)
-        camera  : numéro de caméra (1 à 6)
-        sequence: numéro de séquence vidéo pour cette caméra
-        frame   : numéro de frame
-        box     : index de la bbox détectée dans cette frame
+        pid     : identite de la personne (``-1`` = distracteur, ``0000`` = junk,
+                   tous deux a exclure de l'entrainement)
+        camera  : numero de camera (1 a 6)
+        sequence: numero de sequence video pour cette camera
+        frame   : numero de frame
+        box     : index de la bbox detectee dans cette frame
 """
 
 from __future__ import annotations
 
+import json
 import random
 import re
 from dataclasses import dataclass
@@ -22,7 +23,7 @@ FILENAME_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# IdentityIndex : pid -> camera -> liste des chemins d'images de cette identite/camera.
+# IdentityIndex : pid -> caméra -> liste des chemins d'images de cette identité/caméra.
 IdentityIndex = dict[int, dict[int, list[Path]]]
 
 
@@ -37,8 +38,6 @@ class ParsedFilename:
 
 def parse_filename(name: str) -> ParsedFilename:
     """Parse un nom de fichier Market-1501.
-
-    Leve ``ValueError`` si le nom ne suit pas la convention attendue.
     """
     match = FILENAME_PATTERN.match(name)
     if match is None:
@@ -59,9 +58,6 @@ def is_valid_identity(pid: int) -> bool:
 
 def build_identity_index(image_dir: Path, valid_only: bool = True) -> IdentityIndex:
     """Scanne un dossier Market-1501 (ex: ``bounding_box_train``) et construit l'index.
-
-    Les fichiers dont le nom ne suit pas la convention Market-1501 sont ignorés
-    silencieusement.
     """
     index: IdentityIndex = {}
     for path in sorted(image_dir.glob("*.jpg")):
@@ -80,7 +76,7 @@ def count_images(index: IdentityIndex) -> int:
 
 
 def identities_with_min_images(index: IdentityIndex, min_images: int = 2) -> list[int]:
-    """Identités ayant au moins ``min_images`` images (necessaire pour former un couple ancre/positif)."""
+    """Identités ayant au moins ``min_images`` images (nécessaire pour former un couple ancre/positif)."""
     return [
         pid
         for pid, cameras in index.items()
@@ -91,10 +87,11 @@ def identities_with_min_images(index: IdentityIndex, min_images: int = 2) -> lis
 def split_identities(
     pids: list[int], val_ratio: float = 0.1, seed: int = 42
 ) -> tuple[list[int], list[int]]:
-    """Sépare les identités en train/val (split par IDENTITE, pas par image)."""
+    """Separe les identités en train/val (split par IDENTITÉ, pas par image). 
+    """
     if not 0 <= val_ratio < 1:
         raise ValueError(f"val_ratio doit etre dans [0, 1), recu {val_ratio}")
-    shuffled = sorted(pids)  # tri d'abord pour un ordre deterministe avant le shuffle
+    shuffled = sorted(pids)  # tri d'abord pour un ordre déterministe avant le shuffle
     random.Random(seed).shuffle(shuffled)
     n_val = round(len(shuffled) * val_ratio)
     val_ids = sorted(shuffled[:n_val])
@@ -106,3 +103,45 @@ def subindex(index: IdentityIndex, pids: list[int]) -> IdentityIndex:
     """Sous-ensemble de l'index restreint aux identités données."""
     wanted = set(pids)
     return {pid: cameras for pid, cameras in index.items() if pid in wanted}
+
+
+def flatten_identity_index(index: IdentityIndex) -> dict[int, list[Path]]:
+    """Aplati identité->caméra->images en identité->images (sans distinction de caméra).
+    """
+    return {
+        pid: [path for paths in cameras.values() for path in paths]
+        for pid, cameras in index.items()
+    }
+
+
+def load_identity_index_json(path: Path) -> IdentityIndex:
+    """Recharge un index ecrit par build_dataset.py (train_identities.json / val_identities.json).
+    """
+    raw = json.loads(path.read_text())
+    return {
+        int(pid): {int(camera): [Path(p) for p in paths] for camera, paths in cameras.items()}
+        for pid, cameras in raw.items()
+    }
+
+
+@dataclass(frozen=True)
+class ParsedImage:
+    path: Path
+    pid: int
+    camera: int
+
+
+def list_images(image_dir: Path, valid_only: bool = True) -> list[ParsedImage]:
+    """Version "a plat" de build_identity_index : une liste (path, pid, camera), sans
+    regroupement par identite.
+    """
+    images = []
+    for path in sorted(image_dir.glob("*.jpg")):
+        try:
+            parsed = parse_filename(path.name)
+        except ValueError:
+            continue
+        if valid_only and not is_valid_identity(parsed.pid):
+            continue
+        images.append(ParsedImage(path=path, pid=parsed.pid, camera=parsed.camera))
+    return images

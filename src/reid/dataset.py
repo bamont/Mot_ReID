@@ -1,17 +1,4 @@
 """Dataset PyTorch pour l'entrainement en triplet loss sur Market-1501.
-
-Choix : echantillonnage "online" plutot qu'une liste de triplets figee.
-    Une liste de triplets pre-generee une fois pour toutes limite l'entrainement a un
-    nombre fixe de combinaisons ancre/positif/negatif : sur plusieurs dizaines d'epoques,
-    le modele finit par revoir les memes triplets. Ici, chaque ``__getitem__`` retire un
-    triplet frais via ``sample_triplet`` (src/reid/triplet_sampling.py). Pour rester
-    reproductible malgre l'echantillonnage a la volee, chaque (epoch, index) est associe a
-    un ``random.Random`` deterministe (via ``set_epoch``, meme convention que les samplers
-    distribues de PyTorch) : deux runs avec le meme seed produisent exactement les memes
-    triplets, epoque par epoque.
-
-Ce module depend de torch/torchvision/Pillow (contrairement a market1501.py et
-triplet_sampling.py qui restent en pur Python testable sans ces dependances lourdes).
 """
 
 from __future__ import annotations
@@ -28,22 +15,21 @@ from src.reid.market1501 import IdentityIndex
 from src.reid.triplet_sampling import sample_triplet
 
 # Grand nombre premier arbitraire pour bien disperser (seed, epoch, idx) -> pas de
-# proprietes cryptographiques requises, juste eviter les collisions triviales entre epoques.
+# propriétés cryptographiques requises, juste éviter les collisions triviales entre époques.
 _EPOCH_STRIDE = 1_000_003
 _IDX_STRIDE = 97
 
 
 class TripletMarket1501Dataset(Dataset):
-    """Dataset de taille fixe ``length`` qui tire un triplet (ancre, positif, negatif) par item.
-
+    """Dataset de taille fixe ``length`` qui tire un triplet (ancre, positif, négatif) par item.
     Args:
         index: identite -> camera -> liste de chemins (cf. build_identity_index).
-        length: nombre de triplets par epoque virtuelle. Une valeur usuelle est
-            ``n_identites * k`` (ex: k=4) pour voir chaque identite plusieurs fois par epoque
-            sans pour autant enumerer toutes les combinaisons possibles.
+        length: nombre de triplets par époque virtuelle. Une valeur usuelle est
+            ``n_identites * k`` (ex: k=4) pour voir chaque identite plusieurs fois par époque
+            sans pour autant énumerer toutes les combinaisons possibles.
         transform: transformation torchvision appliquee a chaque image PIL (resize, normalize,
             augmentation...). Si None, les images PIL sont retournees telles quelles.
-        seed: graine de base pour la reproductibilite.
+        seed: graine de base pour la reproductibilité.
         prefer_cross_camera: cf. src/reid/triplet_sampling.py.
     """
 
@@ -56,7 +42,7 @@ class TripletMarket1501Dataset(Dataset):
         prefer_cross_camera: bool = True,
     ) -> None:
         if length <= 0:
-            raise ValueError(f"length doit etre strictement positif, recu {length}")
+            raise ValueError(f"length doit être strictement positif, reçu {length}")
         self.index = index
         self.length = length
         self.transform = transform
@@ -65,10 +51,9 @@ class TripletMarket1501Dataset(Dataset):
         self._epoch = 0
 
     def set_epoch(self, epoch: int) -> None:
-        """A appeler au debut de chaque epoque pour faire varier les triplets tires.
-
-        Meme convention que ``DistributedSampler.set_epoch`` : sans cet appel, le dataset
-        reste utilisable (epoch=0 par defaut) mais retire toujours les memes triplets.
+        """A appeler au début de chaque époque pour faire varier les triplets tirés.
+        même convention que ``DistributedSampler.set_epoch`` : sans cet appel, le dataset
+        reste utilisable (epoch=0 par défaut) mais retire toujours les mêmes triplets.
         """
         self._epoch = epoch
 
@@ -93,3 +78,26 @@ class TripletMarket1501Dataset(Dataset):
             "anchor_id": triplet.anchor_id,
             "negative_id": triplet.negative_id,
         }
+
+
+class ImageListDataset(Dataset):
+    """Dataset simple : une liste de chemins d'images, sans notion d'ancre/positif/négatif.
+    Utilise a l'évaluation pour extraire les embeddings de query/ et bounding_box_test/,
+    ou chaque image est encodée indépendamment (contrairement a l'entrainement, il n'y a
+    pas de triplet a construire ici).
+    """
+
+    def __init__(
+        self,
+        paths: list[Path],
+        transform: Callable[[Image.Image], Tensor] | None = None,
+    ) -> None:
+        self.paths = paths
+        self.transform = transform
+
+    def __len__(self) -> int:
+        return len(self.paths)
+
+    def __getitem__(self, idx: int) -> Tensor | Image.Image:
+        image = Image.open(self.paths[idx]).convert("RGB")
+        return self.transform(image) if self.transform is not None else image
